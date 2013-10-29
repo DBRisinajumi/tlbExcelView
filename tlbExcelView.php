@@ -75,10 +75,12 @@ class tlbExcelView extends CGridView
     public $A4 = false;
     public $RTL = false;
     public $pageFooterText = '&RPage &P of &N';
+   
 
     //config
+    public $offset = 10;
     public $autoWidth = true;
-    public $exportType = 'Excel5';
+    public $exportType = 'Excel2007';
     public $disablePaging = true;
     public $filename = null; //export FileName
     public $stream = true; //stream to browser
@@ -115,7 +117,13 @@ class tlbExcelView extends CGridView
     public static $style = array();
     public static $headerStyle = array();
     public static $footerStyle = array();
-    public static $summableColumns = array();
+    public $summableColumns = array();
+    public $company;
+    public $date_from;
+    public $date_to;
+    public $report_template;
+   
+    
     
     //buttons config
     public $exportButtonsCSS = 'summary';
@@ -194,7 +202,10 @@ class tlbExcelView extends CGridView
             spl_autoload_register(array('YiiBase','autoload'));  
 
             // Creating a workbook
-            self::$objPHPExcel = new PHPExcel();
+            
+             //template
+            if($this->report_template) self::$objPHPExcel = PHPExcel_IOFactory::load($this->report_template);
+            else  self::$objPHPExcel = new PHPExcel();
             self::$activeSheet = self::$objPHPExcel->getActiveSheet();
 
             // Set some basic document properties
@@ -290,7 +301,7 @@ class tlbExcelView extends CGridView
                 $head =trim($column->header)!=='' ? $column->header : $column->grid->blankDisplay;
             }
 
-            $cell = self::$activeSheet->setCellValue($this->columnName($a) . '1', $head, true);
+            $cell = self::$activeSheet->setCellValue($this->columnName($a) . (string)$this->offset, $head, true);
 
             if (is_callable($this->onRenderHeaderCell)) {
                 call_user_func_array($this->onRenderHeaderCell, array($cell, $head));				
@@ -298,7 +309,7 @@ class tlbExcelView extends CGridView
         }
 
         // Format the header row
-        $header = self::$activeSheet->getStyle($this->columnName(1) . '1:' . $this->columnName($a) . '1');
+        $header = self::$activeSheet->getStyle($this->columnName(1) .(string)$this->offset.':' . $this->columnName($a) . (string)$this->offset);
         $header->getAlignment()
             ->setHorizontal(self::$horizontal_center)
             ->setVertical(self::$vertical_center);
@@ -365,12 +376,12 @@ class tlbExcelView extends CGridView
                 $format = null;
             }
 
-            $cell = self::$activeSheet->setCellValue($this->columnName($a) . ($row + 2), $content, true);
+            $cell = self::$activeSheet->setCellValue($this->columnName($a) . ($row + 2 + $this->offset), $content, true);
 
             // Format each cell's number - if any
             if (!is_null($format)) {
-                self::$summableColumns[$a] = $a;
-                self::$activeSheet->getStyle($this->columnName($a) . ($row + 2))->getNumberFormat()->setFormatCode($format);
+               $this->summableColumns[$a] = $a;
+                self::$activeSheet->getStyle($this->columnName($a) . ($row + 2 + $this->offset))->getNumberFormat()->setFormatCode($format);
             }
 
             if(is_callable($this->onRenderDataCell)) {
@@ -379,10 +390,10 @@ class tlbExcelView extends CGridView
         }
 
         // Format the row globally
-        $renderedRow = self::$activeSheet->getStyle('A' . ($row + 2) . ':' . $this->columnName($a) . ($row + 2));
+        $renderedRow = self::$activeSheet->getStyle('A' . ($row + 2 + $this->offset) . ':' . $this->columnName($a) . ($row + 2 + $this->offset));
         $renderedRow->getAlignment()->setVertical(self::$vertical_center);
         $renderedRow->applyFromArray(self::$style);
-        self::$activeSheet->getRowDimension($row + 2)->setRowHeight($this->rowHeight);
+        self::$activeSheet->getRowDimension($row + 2 + $this->offset)->setRowHeight($this->rowHeight);
     }
 
     public function renderFooter($row)
@@ -393,15 +404,15 @@ class tlbExcelView extends CGridView
             if ($column->footer) {
                 $footer = trim($column->footer) !== '' ? $column->footer : $column->grid->blankDisplay;
 
-                $cell = self::$activeSheet->setCellValue($this->columnName($a) . ($row + 2), $footer, true);
+                $cell = self::$activeSheet->setCellValue($this->columnName($a) . ($row + 2 + $this->offset), $footer, true);
 
                 if(is_callable($this->onRenderFooterCell)) {
                     call_user_func_array($this->onRenderFooterCell, array($cell, $footer));				
                 }
-            } else if ($this->automaticSum && in_array($a, self::$summableColumns)) {
+            } else if ($this->automaticSum && in_array($a, $this->summableColumns)) {
                 // We want to render automatic sums in the footer if no footer was already present in the grid
-                $cell = self::$activeSheet->setCellValue($this->columnName($a) . ($row + 2), '=SUM(' . $this->columnName($a) . '2:' . $this->columnName($a) . ($row + 1) . ')', true);
-                $sum = self::$activeSheet->getCell($this->columnName($a) . ($row + 2))->getCalculatedValue();
+                $cell = self::$activeSheet->setCellValue($this->columnName($a) . ($row + 2 + $this->offset), '=SUM(' . $this->columnName($a) . (string)$this->offset.':' . $this->columnName($a) . ($row + 1 + $this->offset) . ')', true);
+                $sum = self::$activeSheet->getCell($this->columnName($a) . ($row + 2 + $this->offset))->getCalculatedValue();
                 if ($sum < 1000) {
                     $format = '0.00';                    
                 } else if ($sum < 1000000) {
@@ -411,7 +422,7 @@ class tlbExcelView extends CGridView
                 }
 
                 // We won't set the whole row's borders and number format, so proceed with each cell individually
-                self::$activeSheet->getStyle($this->columnName($a) . ($row + 2))
+                self::$activeSheet->getStyle($this->columnName($a) . ($row + 2 + $this->offset))
                     ->applyFromArray(self::$footerStyle)
                     ->getNumberFormat()->setFormatCode($format);
 
@@ -420,9 +431,9 @@ class tlbExcelView extends CGridView
                 }
 
                 // Add a label before the first summable column (supposing it's not the first…)
-                if (current(self::$summableColumns) == $a) {
-                    $cell = self::$activeSheet->setCellValue($this->columnName($a - 1) . ($row + 2), $this->sumLabel, true);
-                    self::$activeSheet->getStyle($this->columnName($a - 1) . ($row + 2))
+                if (current($this->summableColumns) == $a) {
+                    $cell = self::$activeSheet->setCellValue($this->columnName($a - 1) . ($row + 2 + $this->offset), $this->sumLabel, true);
+                    self::$activeSheet->getStyle($this->columnName($a - 1) . ($row + 2 + $this->offset))
                         ->applyFromArray(array('font' => array('bold' => true)))
                         ->getAlignment()->setHorizontal(self::$horizontal_right);
                     if(is_callable($this->onRenderFooterCell)) {
@@ -434,14 +445,18 @@ class tlbExcelView extends CGridView
 
         // Some global formatting for the footer in case of automatic sum
         if ($this->automaticSum) {
-            self::$activeSheet->getStyle('A' . ($row + 2) . ':' . $this->columnName($a) . ($row + 2))->getAlignment()->setVertical(self::$vertical_center);
-            self::$activeSheet->getRowDimension($row + 2)->setRowHeight($this->footerHeight);
+            self::$activeSheet->getStyle('A' . ($row + 2 + $this->offset) . ':' . $this->columnName($a) . ($row + 2 + $this->offset))->getAlignment()->setVertical(self::$vertical_center);
+            self::$activeSheet->getRowDimension($row + 2 + $this->offset)->setRowHeight($this->footerHeight);
         }
     }
 
     public function run()
     {
         if ($this->grid_mode == 'export') {
+            
+           
+        //    if($this->company) self::$activeSheet->setCellValue('A'.(string)($this->offset-1) , $this->company, true);
+            
             $this->renderHeader();
             $row = $this->renderBody();
             $this->renderFooter($row);
