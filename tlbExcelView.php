@@ -78,7 +78,7 @@ class tlbExcelView extends CGridView
    
 
     //config
-    public $offset = 10;
+    public $offset = 0;
     public $autoWidth = true;
     public $exportType = 'Excel2007';
     public $disablePaging = true;
@@ -88,7 +88,7 @@ class tlbExcelView extends CGridView
     public $grid_mode_var = 'grid_mode'; //GET var for the grid mode
 
     //options
-    public $automaticSum = false;
+    public $automaticSum = true;
     public $sumLabel = 'Totals';
     public $decimalSeparator = '.';
     public $thousandsSeparator = ',';
@@ -117,7 +117,9 @@ class tlbExcelView extends CGridView
     public static $style = array();
     public static $headerStyle = array();
     public static $footerStyle = array();
-    public $summableColumns = array();
+    public static $captionStyle = array();
+    public static $summableColumns = array();
+    public $sumColumns = array();
     public $company;
     public $date_from;
     public $date_to;
@@ -207,7 +209,7 @@ class tlbExcelView extends CGridView
             if($this->report_template) self::$objPHPExcel = PHPExcel_IOFactory::load($this->report_template);
             else  self::$objPHPExcel = new PHPExcel();
             self::$activeSheet = self::$objPHPExcel->getActiveSheet();
-
+            
             // Set some basic document properties
             if ($this->landscapeDisplay) {
                 self::$activeSheet->getPageSetup()->setOrientation(self::$orientation_landscape);
@@ -263,20 +265,37 @@ class tlbExcelView extends CGridView
                     'color' => array('rgb' => $this->headerTextColor),
                 )
             );
-            self::$footerStyle = array(
+            self::$headerStyle = array(
                 'borders' => array(
                     'allborders' => array(
                                         'style' => $this->border_style,
-                                        'color' => array('rgb' => $this->footerBorderColor),
+                                        'color' => array('rgb' => $this->headerBorderColor),
                                     ),
                 ),
                 'fill' => array(
                     'type' => self::$fill_solid,
-                    'color' => array('rgb' => $this->footerBgColor),
+                    'color' => array('rgb' => $this->headerBgColor),
                 ),
                 'font' => array(
                     'bold' => true,
-                    'color' => array('rgb' => $this->footerTextColor),
+                    'color' => array('rgb' => $this->headerTextColor),
+                )
+            );
+            self::$captionStyle = array(
+                'borders' => array(
+                    'allborders' => array(
+                                        'style' =>'',
+                                        'color' => array('rgb' => '000000'),
+                                    ),
+                ),
+                'fill' => array(
+                    'type' => self::$fill_solid,
+                    'color' => array('rgb' => 'FFFFFF'),
+                ),
+                'font' => array(
+                    'bold' => true,
+                    'size'=> 20,
+                    'color' => array('rgb' => '000000'),
                 )
             );
         } else {
@@ -286,6 +305,14 @@ class tlbExcelView extends CGridView
 
     public function renderHeader()
     {
+         // company and range 
+        if($this->company) {
+            
+            $cell = self::$activeSheet->setCellValue($this->columnName(1) . (string)$this->offset, $this->company, true); 
+            self::$activeSheet->getRowDimension($this->offset)->setRowHeight(30);
+            $caption = self::$activeSheet->getStyle($this->columnName(1) .(string)$this->offset.':' . $this->columnName(5) . (string)$this->offset);
+            $caption->applyFromArray(self::$captionStyle);
+            }
         $a = 0;
         foreach ($this->columns as $column) {
             $a = $a + 1;
@@ -301,7 +328,7 @@ class tlbExcelView extends CGridView
                 $head =trim($column->header)!=='' ? $column->header : $column->grid->blankDisplay;
             }
 
-            $cell = self::$activeSheet->setCellValue($this->columnName($a) . (string)$this->offset, $head, true);
+            $cell = self::$activeSheet->setCellValue($this->columnName($a) . (string)($this->offset+1), $head, true);
 
             if (is_callable($this->onRenderHeaderCell)) {
                 call_user_func_array($this->onRenderHeaderCell, array($cell, $head));				
@@ -309,7 +336,7 @@ class tlbExcelView extends CGridView
         }
 
         // Format the header row
-        $header = self::$activeSheet->getStyle($this->columnName(1) .(string)$this->offset.':' . $this->columnName($a) . (string)$this->offset);
+        $header = self::$activeSheet->getStyle($this->columnName(1) .(string)($this->offset+1).':' . $this->columnName($a) . (string)($this->offset+1));
         $header->getAlignment()
             ->setHorizontal(self::$horizontal_center)
             ->setVertical(self::$vertical_center);
@@ -380,7 +407,7 @@ class tlbExcelView extends CGridView
 
             // Format each cell's number - if any
             if (!is_null($format)) {
-               $this->summableColumns[$a] = $a;
+               self::$summableColumns[$a] = $a;
                 self::$activeSheet->getStyle($this->columnName($a) . ($row + 2 + $this->offset))->getNumberFormat()->setFormatCode($format);
             }
 
@@ -405,21 +432,16 @@ class tlbExcelView extends CGridView
                 $footer = trim($column->footer) !== '' ? $column->footer : $column->grid->blankDisplay;
 
                 $cell = self::$activeSheet->setCellValue($this->columnName($a) . ($row + 2 + $this->offset), $footer, true);
-
+                              
                 if(is_callable($this->onRenderFooterCell)) {
                     call_user_func_array($this->onRenderFooterCell, array($cell, $footer));				
                 }
-            } else if ($this->automaticSum && in_array($a, $this->summableColumns)) {
+            } else if (($this->automaticSum && in_array($a, self::$summableColumns)) || (!$this->automaticSum && in_array($a, $this->sumColumns)) ) {
                 // We want to render automatic sums in the footer if no footer was already present in the grid
                 $cell = self::$activeSheet->setCellValue($this->columnName($a) . ($row + 2 + $this->offset), '=SUM(' . $this->columnName($a) . (string)$this->offset.':' . $this->columnName($a) . ($row + 1 + $this->offset) . ')', true);
                 $sum = self::$activeSheet->getCell($this->columnName($a) . ($row + 2 + $this->offset))->getCalculatedValue();
-                if ($sum < 1000) {
-                    $format = '0.00';                    
-                } else if ($sum < 1000000) {
-                    $format = '#\.##0.00';
-                } else {
-                    $format = '#\.###\.##0.00';
-                }
+                $format = '0.00';                    
+            
 
                 // We won't set the whole row's borders and number format, so proceed with each cell individually
                 self::$activeSheet->getStyle($this->columnName($a) . ($row + 2 + $this->offset))
@@ -431,8 +453,8 @@ class tlbExcelView extends CGridView
                 }
 
                 // Add a label before the first summable column (supposing it's not the first…)
-                if (current($this->summableColumns) == $a) {
-                    $cell = self::$activeSheet->setCellValue($this->columnName($a - 1) . ($row + 2 + $this->offset), $this->sumLabel, true);
+               // if (current(self::$summableColumns) == $a) {
+                    $cell = self::$activeSheet->setCellValue($this->columnName(1) . ($row + 2 + $this->offset), $this->sumLabel, true);
                     self::$activeSheet->getStyle($this->columnName($a - 1) . ($row + 2 + $this->offset))
                         ->applyFromArray(array('font' => array('bold' => true)))
                         ->getAlignment()->setHorizontal(self::$horizontal_right);
@@ -441,13 +463,13 @@ class tlbExcelView extends CGridView
                     }
                 }
             }
-        }
+        
 
         // Some global formatting for the footer in case of automatic sum
-        if ($this->automaticSum) {
-            self::$activeSheet->getStyle('A' . ($row + 2 + $this->offset) . ':' . $this->columnName($a) . ($row + 2 + $this->offset))->getAlignment()->setVertical(self::$vertical_center);
-            self::$activeSheet->getRowDimension($row + 2 + $this->offset)->setRowHeight($this->footerHeight);
-        }
+       // if ($this->automaticSum) {
+       self::$activeSheet->getStyle('A' . ($row + 2 + $this->offset) . ':' . $this->columnName($a) . ($row + 2 + $this->offset))->getAlignment()->setVertical(self::$vertical_center);
+       self::$activeSheet->getRowDimension($row + 2 + $this->offset)->setRowHeight($this->footerHeight);
+        //}
     }
 
     public function run()
