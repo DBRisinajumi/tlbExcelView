@@ -206,7 +206,10 @@ class tlbExcelView extends CGridView
             // Creating a workbook
             
              //template
-            if($this->report_template) self::$objPHPExcel = PHPExcel_IOFactory::load($this->report_template);
+            if($this->report_template) {
+                self::$objPHPExcel = PHPExcel_IOFactory::load($this->report_template);
+                $this->offset = self::$objPHPExcel->getActiveSheet()->getHighestRow()+2;
+            }    
             else  self::$objPHPExcel = new PHPExcel();
             self::$activeSheet = self::$objPHPExcel->getActiveSheet();
             
@@ -455,8 +458,8 @@ class tlbExcelView extends CGridView
                 // Add a label before the first summable column (supposing it's not the first…)
                // if (current(self::$summableColumns) == $a) {
                     $cell = self::$activeSheet->setCellValue($this->columnName(1) . ($row + 2 + $this->offset), $this->sumLabel, true);
-                    self::$activeSheet->getStyle($this->columnName($a - 1) . ($row + 2 + $this->offset))
-                        ->applyFromArray(array('font' => array('bold' => true)))
+                    self::$activeSheet->getStyle($this->columnName(1) . ($row + 2 + $this->offset))
+                        ->applyFromArray(array('font' => array('bold' => true,'size' => 12)))
                         ->getAlignment()->setHorizontal(self::$horizontal_right);
                     if(is_callable($this->onRenderFooterCell)) {
                         call_user_func_array($this->onRenderFooterCell, array($cell, $footer));				
