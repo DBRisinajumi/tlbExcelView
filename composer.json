@@ -1,5 +1,5 @@
 {
-    "name": "dbrisinajumi/tleexcelview",
+    "name": "dbrisinajumi/tlbexcelview",
     "description": "Another Yii CGridView-to-Excel exporter using PHPExcel, based on EExcelView Yii extension",
     "keywords": ["excel","yii"],
     "type": "yii-extension",
