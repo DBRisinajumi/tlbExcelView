@@ -120,7 +120,7 @@ class tlbExcelView extends CGridView
     public static $captionStyle = array();
     public static $summableColumns = array();
     public $sumColumns = array();
-    public $company;
+    public $caption;
     public $date_from;
     public $date_to;
     public $report_template;
@@ -297,7 +297,7 @@ class tlbExcelView extends CGridView
                 ),
                 'font' => array(
                     'bold' => true,
-                    'size'=> 20,
+                    'size'=> 16,
                     'color' => array('rgb' => '000000'),
                 )
             );
@@ -308,14 +308,19 @@ class tlbExcelView extends CGridView
 
     public function renderHeader()
     {
-         // company and range 
-        if($this->company) {
+       
+             
             
-            $cell = self::$activeSheet->setCellValue($this->columnName(1) . (string)$this->offset, $this->company, true); 
-            self::$activeSheet->getRowDimension($this->offset)->setRowHeight(30);
-            $caption = self::$activeSheet->getStyle($this->columnName(1) .(string)$this->offset.':' . $this->columnName(5) . (string)$this->offset);
-            $caption->applyFromArray(self::$captionStyle);
-            }
+        if (!empty($this->caption)) {
+            
+             self::$activeSheet->mergeCells($this->columnName(1) . (string)$this->offset.':'.$this->columnName(7) . (string)$this->offset);
+             $cell = self::$activeSheet->setCellValue($this->columnName(1) . (string)$this->offset, $this->caption , true);
+             self::$activeSheet->getRowDimension($this->offset)->setRowHeight(20);
+             $caption = self::$activeSheet->getStyle($this->columnName(1) .(string)$this->offset.':' . $this->columnName(5) . (string)$this->offset);
+             $caption->applyFromArray(self::$captionStyle);
+             $this->offset += 1;
+        }    
+            
         $a = 0;
         foreach ($this->columns as $column) {
             $a = $a + 1;
