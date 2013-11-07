@@ -137,6 +137,8 @@ class tlbExcelView extends CGridView
     public $onRenderDataCell = null;
     public $onRenderFooterCell = null;
     
+    public $company;
+    
     //mime types used for streaming
     public $mimeTypes = array(
         'Excel5'	=> array(
@@ -485,7 +487,7 @@ class tlbExcelView extends CGridView
         if ($this->grid_mode == 'export') {
             
            
-        //    if($this->company) self::$activeSheet->setCellValue('A'.(string)($this->offset-1) , $this->company, true);
+            if($this->company) self::$activeSheet->setCellValue('A'.(string)($this->offset-2) , $this->company, true);
             
             $this->renderHeader();
             $row = $this->renderBody();
