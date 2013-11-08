@@ -138,6 +138,7 @@ class tlbExcelView extends CGridView
     public $onRenderFooterCell = null;
     
     public $company;
+    public $rate_line;
     
     //mime types used for streaming
     public $mimeTypes = array(
@@ -487,7 +488,13 @@ class tlbExcelView extends CGridView
         if ($this->grid_mode == 'export') {
             
            
-            if($this->company) self::$activeSheet->setCellValue('A'.(string)($this->offset-2) , $this->company, true);
+            if($this->company){
+                self::$activeSheet->setCellValue('A'.(string)($this->offset-2) , $this->company, true);
+            }
+
+            if($this->rate_line){
+                self::$activeSheet->setCellValue('A'.(string)($this->offset-1) , $this->rate_line, true);
+            }
             
             $this->renderHeader();
             $row = $this->renderBody();
