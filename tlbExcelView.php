@@ -121,6 +121,7 @@ class tlbExcelView extends CGridView
     public static $summableColumns = array();
     public $sumColumns = array();
     public $caption;
+    public $caption_columns = 7;
     public $date_from;
     public $date_to;
     public $report_template;
@@ -316,7 +317,7 @@ class tlbExcelView extends CGridView
             
         if (!empty($this->caption)) {
             
-             self::$activeSheet->mergeCells($this->columnName(1) . (string)$this->offset.':'.$this->columnName(7) . (string)$this->offset);
+             self::$activeSheet->mergeCells($this->columnName(1) . (string)$this->offset.':'.$this->columnName($this->caption_columns) . (string)$this->offset);
              $cell = self::$activeSheet->setCellValue($this->columnName(1) . (string)$this->offset, $this->caption , true);
              self::$activeSheet->getRowDimension($this->offset)->setRowHeight(20);
              $caption = self::$activeSheet->getStyle($this->columnName(1) .(string)$this->offset.':' . $this->columnName(5) . (string)$this->offset);
