@@ -354,6 +354,8 @@ class tlbExcelView extends CGridView
             ->setVertical(self::$vertical_center);
         $header->applyFromArray(self::$headerStyle);
         self::$activeSheet->getRowDimension(1)->setRowHeight($this->headerHeight);
+
+        $this->offset += 1;
     }
 
     public function renderBody()
@@ -482,13 +484,13 @@ class tlbExcelView extends CGridView
        self::$activeSheet->getStyle('A' . ($row + 2 + $this->offset) . ':' . $this->columnName($a) . ($row + 2 + $this->offset))->getAlignment()->setVertical(self::$vertical_center);
        self::$activeSheet->getRowDimension($row + 2 + $this->offset)->setRowHeight($this->footerHeight);
         //}
+       $this->offset += 1;
     }
 
     public function run()
     {
         if ($this->grid_mode == 'export') {
-            
-           
+
             if($this->company){
                 self::$activeSheet->setCellValue('A'.(string)($this->offset-2) , $this->company, true);
             }
@@ -516,7 +518,7 @@ class tlbExcelView extends CGridView
                 ->setOddHeader('&C' . $this->sheetTitle)
                 ->setOddFooter('&L&B' . self::$objPHPExcel->getProperties()->getTitle() . $this->pageFooterText);
             self::$activeSheet->getPageSetup()
-                ->setPrintArea('A1:' . $this->columnName(count($this->columns)) . ($row + 2))
+                ->setPrintArea('A1:' . $this->columnName(count($this->columns)) . ($this->offset + $row + 2))
                 ->setFitToWidth();
 
             //create writer for saving
