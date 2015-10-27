@@ -398,20 +398,29 @@ class tlbExcelView extends CGridView
             }
 
             $a++;
+            
+            //check defined format from htmlOptions
+            
+            unset($format);
+            
+            if (isset($column->htmlOptions['format'])){
+                
+                $format = $column->htmlOptions['format'];
+            }
 
             // Check if the cell value is a number, then format it accordingly
             // May be improved notably by exposing the formats as public
             // May be usable only for French-style number formatting ?
             if (preg_match("/^[0-9]*\\" . $this->thousandsSeparator . "[0-9]*\\" . $this->decimalSeparator . "[0-9]*$/", strip_tags($value))) {
                 $content = str_replace($this->decimalSeparator, '.', str_replace($this->thousandsSeparator, '', strip_tags($value)));
-                $format = '#\.##0.00';
+                if (isset($column->format)) $format = $column->format; else $format = '#\.##0.00';
             } else if (preg_match("/^[0-9]*\\" . $this->decimalSeparator . "[0-9]*$/", strip_tags($value))) {
                 $content = str_replace($this->decimalSeparator, '.', strip_tags($value));
-                $format = '0.00';
+                 if (!isset($format))  $format = '0.00';
             } else if (!$this->displayZeros && ((strip_tags($value) === '0') || (strip_tags($value) === $this->zeroPlaceholder))) {
                 $content = $this->zeroPlaceholder;
                 self::$activeSheet->getStyle($this->columnName($a) . ($row + 2))->getAlignment()->setHorizontal(self::$horizontal_right);
-                $format = '0.00';
+                if (!isset($format))  $format = '0.00';
             } else {
                 $content = strip_tags($value);
                 $format = null;
