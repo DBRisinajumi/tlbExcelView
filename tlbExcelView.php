@@ -463,7 +463,12 @@ class tlbExcelView extends CGridView
                 // We want to render automatic sums in the footer if no footer was already present in the grid
                 $cell = self::$activeSheet->setCellValue($this->columnName($a) . ($row + 2 + $this->offset), '=SUM(' . $this->columnName($a) . (string)(1+$this->offset).':' . $this->columnName($a) . ($row + 1 + $this->offset) . ')', true);
                 $sum = self::$activeSheet->getCell($this->columnName($a) . ($row + 2 + $this->offset))->getCalculatedValue();
-                $format = '0.00';                    
+              
+                
+                if (isset($column->htmlOptions['format'])){
+
+                    $format = $column->htmlOptions['format'];
+                } else    $format = '0.00';                    
             
 
                 // We won't set the whole row's borders and number format, so proceed with each cell individually
